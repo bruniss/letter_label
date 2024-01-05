@@ -4,6 +4,7 @@ import random
 import tkinter as tk
 from tkinter import filedialog, simpledialog, ttk
 from PIL import Image, ImageTk, ImageDraw
+import json
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -224,10 +225,48 @@ class App:
 
     def cut_bboxes(self):
 
-        
         output_dir = filedialog.askdirectory(title="Select Output Folder")
         if not output_dir:  # User cancelled the dialog
             return
+        
+        # Prepare data for JSON files
+        coco_data = {"images": [], "annotations": [], "categories": []}
+        cvat_data = {"annotations": []}
+        basic_list_data = []
+
+        for idx, (name, bbox_coords, _) in enumerate(self.bounding_boxes):
+            x1, y1, x2, y2 = [int(coord) for coord in bbox_coords]
+
+            # COCO format
+            coco_data["annotations"].append({
+                "id": idx,
+                "image_id": 1,  # Assuming single image
+                "bbox": [x1, y1, x2 - x1, y2 - y1],  # COCO uses [x, y, width, height]
+                "category_id": 1,  # Assuming single category
+            })
+
+            # CVAT format (simplified)
+            cvat_data["annotations"].append({
+                "id": idx,
+                "label": name,
+                "points": [x1, y1, x2, y2],
+                "type": "rectangle",
+            })
+
+            # Basic list
+            basic_list_data.append({"name": name, "bbox": [x1, y1, x2, y2]})
+
+        # Save JSON files
+        with open(os.path.join(output_dir, "coco_format.json"), 'w') as f:
+            json.dump(coco_data, f, indent=4)
+
+        with open(os.path.join(output_dir, "cvat_format.json"), 'w') as f:
+            json.dump(cvat_data, f, indent=4)
+
+        with open(os.path.join(output_dir, "basic_list_format.json"), 'w') as f:
+            json.dump(basic_list_data, f, indent=4)
+
+    
 
         inklabels_img = Image.open(os.path.join(self.folder_path, "inklabels.png"))
         mask_img = Image.open(os.path.join(self.folder_path, "mask.png"))
