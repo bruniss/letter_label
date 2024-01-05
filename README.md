@@ -3,7 +3,7 @@ tool for creating bbox cutouts for letters or areas in the vesuvius challenge to
 ![Screenshot 2024-01-05 at 8 38 09 AM](https://github.com/bruniss/letter_label/assets/120566210/9ae42ef4-755f-49e4-9fce-ce86a9581db4)
 
 
-download the zip, or clone it. cd into the repo and open it with gui.py
+download the zip, or clone it. cd into the repo and open it with bbox_gui.py
 
 pan by click + drag,
 zoom with scroll wheel,
