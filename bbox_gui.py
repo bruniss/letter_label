@@ -223,11 +223,21 @@ class App:
                 self.bounding_boxes.append((self.current_bbox_name, bbox_coords))
                 self.rect = None
 
+    
+
+        
     def cut_bboxes(self):
 
         output_dir = filedialog.askdirectory(title="Select Output Folder")
         if not output_dir:  # User cancelled the dialog
             return
+        
+        inklabels_img = Image.open(os.path.join(self.folder_path, "inklabels.png"))
+        mask_img = Image.open(os.path.join(self.folder_path, "mask.png"))
+
+        # Create a transparent overlay
+        bbox_overlay = Image.new("RGBA", inklabels_img.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(bbox_overlay)
         
         # Prepare data for JSON files
         coco_data = {"images": [], "annotations": [], "categories": []}
@@ -256,6 +266,14 @@ class App:
             # Basic list
             basic_list_data.append({"name": name, "bbox": [x1, y1, x2, y2]})
 
+            # Draw bounding boxes on the overlay
+            draw.rectangle([x1, y1, x2, y2], outline="red", fill=(0, 255, 0, 128))  # Semi-transparent green
+
+        # Blend the overlay with the original image
+        bbox_progress_img = Image.alpha_composite(inklabels_img.convert("RGBA"), bbox_overlay)
+        bbox_progress_img = bbox_progress_img.convert("RGB")  # Convert back to RGB
+        bbox_progress_img.save(os.path.join(output_dir, "bbox_progress.png"))
+
         # Save JSON files
         with open(os.path.join(output_dir, "coco_format.json"), 'w') as f:
             json.dump(coco_data, f, indent=4)
@@ -265,16 +283,6 @@ class App:
 
         with open(os.path.join(output_dir, "basic_list_format.json"), 'w') as f:
             json.dump(basic_list_data, f, indent=4)
-
-    
-
-        inklabels_img = Image.open(os.path.join(self.folder_path, "inklabels.png"))
-        mask_img = Image.open(os.path.join(self.folder_path, "mask.png"))
-
-        # Create a transparent overlay
-        bbox_overlay = Image.new("RGBA", inklabels_img.size, (0, 0, 0, 0))
-        draw = ImageDraw.Draw(bbox_overlay)
-
 
         total_operations = len(self.bounding_boxes) * (len(os.listdir(os.path.join(self.folder_path, 'layers'))) + 2)
         self.progress['maximum'] = total_operations
@@ -307,15 +315,6 @@ class App:
                     current_operation += 1
                     self.progress['value'] = current_operation
                     self.root.update_idletasks()
-
-        for _, bbox_coords, _ in self.bounding_boxes:
-            x1, y1, x2, y2 = [int(coord) for coord in bbox_coords]
-            draw.rectangle([x1, y1, x2, y2], outline="red", fill=(0, 255, 0, 128))  # Semi-transparent green
-
-        # Blend the overlay with the original image
-        bbox_progress_img = Image.alpha_composite(inklabels_img.convert("RGBA"), bbox_overlay)
-        bbox_progress_img = bbox_progress_img.convert("RGB")  # Convert back to RGB
-        bbox_progress_img.save(os.path.join(output_dir, "bbox_progress.png"))
 
         self.progress['value'] = total_operations
 
